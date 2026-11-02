@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Eye Care & Vision Exercises — Interactive Voice & Visual Guide</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #070d19;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(51, 65, 85, 0.65);
+    }
+    .active-card {
+      border-color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.12) !important;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.18);
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.12); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .speaking-dot {
+      animation: pulse-ring 1.2s infinite ease-in-out;
+    }
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
+
+  <!-- TOP NAVIGATION & AUDIO BAR -->
+  <header class="glass-panel sticky top-0 z-30 border-b border-slate-800/80 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">OcuFlow Vision Coach</h1>
+            <span id="wakeLockBadge" class="hidden text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Wake Lock Active</span>
+          </div>
+          <p class="text-xs text-slate-400">60FPS Oculomotor Tracking &bull; Real-Time Voice Announcements</p>
+        </div>
+      </div>
+
+      <!-- Audio & Voice Controls -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Live Speaking Indicator -->
+        <div id="speechStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs">
+          <span id="speechDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          <span id="speechStatusText" class="text-slate-300 font-medium">Voice Ready</span>
+        </div>
+
+        <!-- Voice Selector -->
+        <select id="voiceSelect" aria-label="Select TTS Voice" class="bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-emerald-500 max-w-[210px] truncate">
+          <option value="DEFAULT_SAFE">System Default (Safe Mode)</option>
+        </select>
+
+        <!-- Voice Toggle -->
+        <button id="toggleVoiceBtn" onclick="toggleVoice()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition flex items-center gap-1.5">
+          <span id="voiceToggleIcon">🔊</span>
+          <span id="voiceToggleLabel">Voice: ON</span>
+        </button>
+
+        <!-- Test Voice Button -->
+        <button onclick="testVoiceAnnouncement()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5 cursor-pointer">
+          <span>🎙️ Test Voice</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT GRID -->
+  <main class="max-w-7xl w-full mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
+
+    <!-- LEFT / CENTER COLUMN: VISUAL TRACKING STAGE (8 COLS) -->
+    <section class="lg:col-span-8 flex flex-col gap-4">
+      
+      <!-- Canvas Container Card -->
+      <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col relative overflow-hidden shadow-2xl">
+        
+        <!-- Top Stage Info Overlay -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-slate-800/80">
+          <div class="flex items-center gap-2.5">
+            <span id="stageStepBadge" class="px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold mono">
+              STAGE 1 / 7
+            </span>
+            <div>
+              <h2 id="activeExerciseTitle" class="text-sm sm:text-base font-bold text-white">Horizontal Smooth Pursuit</h2>
+              <p id="activeExerciseSubtitle" class="text-xs text-slate-400">Keep your head still. Follow the glowing emerald target smoothly left and right.</p>
+            </div>
+          </div>
+
+          <!-- Timer & Routine Progress -->
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Remaining</div>
+              <div id="stageTimerDisplay" class="text-xl sm:text-2xl font-extrabold mono text-emerald-400">00:30</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HTML5 VISUAL TRACKING CANVAS -->
+        <div class="relative w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800" style="height: 410px;">
+          <canvas id="eyeCanvas" class="w-full h-full block"></canvas>
+
+          <!-- Prominent Bottom Visual Caption HUD Overlay (DOM Layer synced with Canvas + Instant Speak Button) -->
+          <div id="canvasPhaseOverlay" class="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 speaking-dot"></span>
+              <div class="min-w-0 flex-1">
+                <div class="text-[10px] uppercase tracking-wider text-emerald-400 font-bold">Live Visual Guidance &amp; Voice Prompt</div>
+                <div id="bottomVisualCaptionText" class="text-sm sm:text-base font-bold text-white truncate">
+                  Look Left &rarr; Follow Target Smoothly
+                </div>
+              </div>
+            </div>
+            <button onclick="speakCurrentBottomText()" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition shrink-0 cursor-pointer">
+              🔊 Speak Text Now
+            </button>
+          </div>
+        </div>
+
+        <!-- Stage Progress Bar -->
+        <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden mt-3 border border-slate-800">
+          <div id="stageProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-150"></div>
+        </div>
+
+        <!-- Playback & Transport Controls -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2">
+          <div class="flex items-center gap-2">
+            <button id="startPauseBtn" onclick="toggleStartPause()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition flex items-center gap-2 cursor-pointer">
+              <span id="startPauseIcon">▶</span>
+              <span id="startPauseText">Start Routine</span>
+            </button>
+            <button onclick="prevStage()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+              ⏮ Prev
+            </button>
+            <button onclick="nextStage()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+              Next ⏭
+            </button>
+            <button onclick="resetRoutine()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition cursor-pointer">
+              ↺ Reset
+            </button>
+          </div>
+
+          <!-- Speed & Speech Rate Controls -->
+          <div class="flex items-center gap-3 text-xs">
+            <label class="flex items-center gap-1.5 text-slate-300">
+              <span>Target Speed:</span>
+              <select id="speedSelect" onchange="updateSpeed()" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+                <option value="0.7">Gentle (0.7x)</option>
+                <option value="1.0" selected>Standard (1.0x)</option>
+                <option value="1.35">Brisk (1.35x)</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Custom Bottom Visual Text & Screenshot Caption Bar -->
+      <div class="glass-panel rounded-2xl p-4 border border-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Custom Bottom Visual Caption &amp; Voice Announcer</h3>
+            <p class="text-xs text-slate-400">Pin any custom exercise text or screenshot instruction to the bottom of the visual canvas and announce it with voice.</p>
+          </div>
+          <label class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold cursor-pointer transition">
+            🖼️ Load Screenshot Preview
+            <input type="file" id="screenshotInput" accept="image/*" class="hidden" onchange="handleScreenshotUpload(event)" />
+          </label>
+        </div>
+
+        <!-- Optional Screenshot Thumbnail Preview -->
+        <div id="screenshotPreviewContainer" class="hidden mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-700 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <img id="screenshotImg" src="" alt="Screenshot Reference" class="h-14 w-auto rounded-lg border border-slate-700 object-contain" />
+            <div class="text-xs text-slate-300">
+              <div class="font-bold text-white">Reference Image Attached</div>
+              <div class="text-slate-400">Type or select the caption below to display at the bottom of the visual &amp; announce aloud.</div>
+            </div>
+          </div>
+          <button onclick="clearScreenshotPreview()" class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1">✕ Remove</button>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <input id="customCaptionInput" type="text" placeholder="Type custom instruction text to show at bottom of visual & speak aloud..." 
+            class="flex-1 min-w-[220px] bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          <button onclick="applyAndSpeakCustomCaption()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition cursor-pointer">
+            📌 Pin to Visual &amp; Speak
+          </button>
+          <button onclick="clearCustomCaptionOverride()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition cursor-pointer">
+            Auto Mode
+          </button>
+        </div>
+
+        <!-- Quick Preset Screenshot / Clinical Captions -->
+        <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
+          <span class="text-[11px] text-slate-400 mr-1">Quick Voice Prompts:</span>
+          <button onclick="quickPinAndSpeak('20-20-20 Rule: Look 20 feet away for 20 seconds to relax eye muscles.')" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition cursor-pointer">20-20-20 Rule</button>
+          <button onclick="quickPinAndSpeak('Blink gently 10 times to refresh your tear film and prevent dry eyes.')" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition cursor-pointer">Tear Film Blink</button>
+          <button onclick="quickPinAndSpeak('Keep your head completely still and move only your eyes smoothly.')" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition cursor-pointer">Keep Head Still</button>
+          <button onclick="quickPinAndSpeak('Rub both palms together until warm and gently cup them over closed eyes.')" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition cursor-pointer">Warm Palming</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT COLUMN: ROUTINE PRESETS & 7 EXERCISES LIST (4 COLS) -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+      
+      <!-- Routine Mode Selector -->
+      <div class="glass-panel rounded-2xl p-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">Select Routine Preset</h3>
+        <div class="grid grid-cols-3 gap-2">
+          <button id="preset-full" onclick="selectPreset('full')" class="p-2.5 rounded-xl border border-emerald-500 bg-emerald-500/15 text-left transition cursor-pointer">
+            <div class="text-xs font-bold text-white">Full Care</div>
+            <div class="text-[11px] text-emerald-300 mono">7 Steps &bull; 3.5m</div>
+          </button>
+          <button id="preset-quick" onclick="selectPreset('quick')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/60 text-left transition cursor-pointer">
+            <div class="text-xs font-bold text-white">Quick Relief</div>
+            <div class="text-[11px] text-slate-400 mono">4 Steps &bull; 1.5m</div>
+          </button>
+          <button id="preset-relax" onclick="selectPreset('relax')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/60 text-left transition cursor-pointer">
+            <div class="text-xs font-bold text-white">Deep Rest</div>
+            <div class="text-[11px] text-slate-400 mono">3 Steps &bull; 2.0m</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Exercise Queue List -->
+      <div class="glass-panel rounded-2xl p-4 flex-1 flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Exercise Sequence</h3>
+          <span class="text-[11px] text-slate-400">Click any stage to jump</span>
+        </div>
+        <div id="exerciseListContainer" class="space-y-2 overflow-y-auto max-h-[470px] pr-1">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- JAVASCRIPT ENGINE -->
+  <script>
+    // =========================================================================
+    // 1. EXERCISE DEFINITIONS & TIMED VOICE CUES
+    // =========================================================================
+    const ALL_EXERCISES = [
+      {
+        id: 'horizontal',
+        name: 'Horizontal Smooth Pursuit',
+        duration: 30,
+        subtitle: 'Keep your head still. Track the glowing target smoothly from left to right.',
+        startPrompt: 'Stage 1. Horizontal tracking. Keep your head still and follow the dot left and right.',
+        cues: [
+          { time: 2, text: 'Look Left — Follow Target Smoothly' },
+          { time: 6, text: 'Look Right — Stretch Outer Eye Muscles' },
+          { time: 11, text: 'Look Left — Breathe Naturally' },
+          { time: 16, text: 'Look Right — Keep Your Neck Relaxed' },
+          { time: 21, text: 'Look Left — Smooth Steady Motion' },
+          { time: 26, text: 'Look Right — Almost Done' }
+        ]
+      },
+      {
+        id: 'vertical',
+        name: 'Vertical Elevation Stretch',
+        duration: 30,
+        subtitle: 'Look high up toward your eyebrows, then smoothly down toward your cheeks.',
+        startPrompt: 'Stage 2. Vertical eye stretch. Follow the target smoothly up and down.',
+        cues: [
+          { time: 2, text: 'Look Up — Raise Your Gaze High' },
+          { time: 7, text: 'Look Down — Lower Your Gaze Smoothly' },
+          { time: 12, text: 'Look Up — Keep Forehead Relaxed' },
+          { time: 17, text: 'Look Down — Gentle Vertical Stretch' },
+          { time: 22, text: 'Look Up — Hold Steady' },
+          { time: 26, text: 'Look Down — Relax Your Shoulders' }
+        ]
+      },
+      {
+        id: 'orbital',
+        name: '360° Orbital Rolling',
+        duration: 36,
+        subtitle: 'Roll your eyes in a wide full circle. Direction reverses halfway through.',
+        startPrompt: 'Stage 3. 360 degree orbital roll. Trace the wide circle smoothly clockwise.',
+        cues: [
+          { time: 2, text: 'Rotate Clockwise — Trace a Full Wide Circle' },
+          { time: 10, text: 'Continue Clockwise — Smooth Circular Motion' },
+          { time: 18, text: 'Reverse Direction — Rotate Counter-Clockwise Now' },
+          { time: 27, text: 'Counter-Clockwise — Breathe Slowly and Deeply' }
+        ]
+      },
+      {
+        id: 'figure8',
+        name: 'Figure-8 Infinity Flow',
+        duration: 36,
+        subtitle: 'Trace the smooth sideways infinity loop across your visual field.',
+        startPrompt: 'Stage 4. Figure 8 infinity tracking. Follow the target along the infinity loop.',
+        cues: [
+          { time: 2, text: 'Trace the Figure-8 Loop Smoothly' },
+          { time: 12, text: 'Cross Center — Coordinate Both Eyes Together' },
+          { time: 20, text: 'Reverse Infinity Flow — Smooth Tracking' },
+          { time: 29, text: 'Final Loops — Keep Blinking Softly' }
+        ]
+      },
+      {
+        id: 'nearfar',
+        name: 'Near-Far Focus Accommodation',
+        duration: 36,
+        subtitle: 'Shift focus between the expanding close target and a distant point 20 feet away.',
+        startPrompt: 'Stage 5. Near and far focus shift. Focus closely as the ring expands, then relax your gaze into the distance.',
+        cues: [
+          { time: 2, text: 'Focus Near — Lock Onto the Expanding Center Ring' },
+          { time: 8, text: 'Focus Far — Look Past Your Screen 20 Feet Away' },
+          { time: 15, text: 'Focus Near — Converge Your Eyes on the Target' },
+          { time: 21, text: 'Focus Far — Relax Ciliary Lens Muscles Completely' },
+          { time: 28, text: 'Focus Near — Crisp Sharp Center Focus' }
+        ]
+      },
+      {
+        id: 'blinking',
+        name: 'Flutter Blinking & Gentle Squeeze',
+        duration: 24,
+        subtitle: 'Blink lightly and rapidly to spread fresh tears across the cornea.',
+        startPrompt: 'Stage 6. Flutter blinking. Blink rapidly and lightly to refresh your tear film.',
+        cues: [
+          { time: 1, text: 'Blink Rapidly & Lightly Like Butterfly Wings' },
+          { time: 9, text: 'Close Eyes Gently & Squeeze for 3 Seconds' },
+          { time: 14, text: 'Open & Flutter Blink Softly Again' },
+          { time: 20, text: 'Relax Eyelids — Feel the Fresh Moisture' }
+        ]
+      },
+      {
+        id: 'palming',
+        name: 'Warm Palming & Darkness Rest',
+        duration: 40,
+        subtitle: 'Rub palms together until warm, cup gently over closed eyes, and breathe.',
+        startPrompt: 'Stage 7. Warm palming. Rub your hands together until warm, close your eyes, and cup your palms gently over them.',
+        cues: [
+          { time: 2, text: 'Rub Palms Together Briskly to Create Warmth' },
+          { time: 8, text: 'Cup Warm Palms Over Closed Eyes Without Pressing' },
+          { time: 16, text: 'Inhale Deeply for 4 Seconds... Exhale Slowly' },
+          { time: 26, text: 'Visualize Total Soothing Darkness — Relax Your Mind' },
+          { time: 35, text: 'Slowly Lower Your Hands & Gently Open Your Eyes' }
+        ]
+      }
+    ];
+
+    const PRESET_MAP = {
+      full: [0, 1, 2, 3, 4, 5, 6],
+      quick: [0, 1, 4, 5],
+      relax: [4, 5, 6]
+    };
+
+    // =========================================================================
+    // 2. APPLICATION STATE
+    // =========================================================================
+    const state = {
+      preset: 'full',
+      activeIndices: [...PRESET_MAP.full],
+      currentSlot: 0,
+      isRunning: false,
+      elapsedInStage: 0,
+      speedMultiplier: 1.0,
+      voiceEnabled: true,
+      selectedVoiceURI: 'DEFAULT_SAFE',
+      availableVoices: [],
+      firedCueTimes: new Set(),
+      customBottomCaption: '',
+      currentBottomText: 'Look Left → Follow Target Smoothly',
+      lastFrameTime: performance.now(),
+      wakeLock: null
+    };
+
+    // Prevent garbage collection of active SpeechSynthesisUtterance in Chromium
+    window._activeEyeUtterance = null;
+
+    // =========================================================================
+    // 3. VOICE ANNOUNCEMENT ENGINE (PURE SPEECH SYNTHESIS - NO CHIMES)
+    // =========================================================================
+    function initVoices() {
+      if (!('speechSynthesis' in window)) {
+        updateSpeechBadge('Speech API Unsupported', 'bg-rose-500');
+        return;
+      }
+
+      const populateVoiceList = () => {
+        const rawVoices = window.speechSynthesis.getVoices() || [];
+        state.availableVoices = rawVoices;
+        const select = document.getElementById('voiceSelect');
+        const currentVal = select.value || 'DEFAULT_SAFE';
+        select.innerHTML = '';
+
+        // Option 1: Unassigned Default Safe Mode (bypasses stalled remote Google voice bindings)
+        const safeOpt = document.createElement('option');
+        safeOpt.value = 'DEFAULT_SAFE';
+        safeOpt.textContent = '★ System Default Voice (Recommended)';
+        select.appendChild(safeOpt);
+
+        // Sort offline/local English voices first
+        const sorted = [...rawVoices].sort((a, b) => {
+          const aEng = a.lang.toLowerCase().startsWith('en') ? 1 : 0;
+          const bEng = b.lang.toLowerCase().startsWith('en') ? 1 : 0;
+          if (aEng !== bEng) return bEng - aEng;
+          return (b.localService ? 1 : 0) - (a.localService ? 1 : 0);
+        });
+
+        sorted.forEach(v => {
+          const opt = document.createElement('option');
+          opt.value = v.voiceURI;
+          const tag = v.localService ? '[Offline]' : '[Network]';
+          opt.textContent = `${tag} ${v.name} (${v.lang})`;
+          select.appendChild(opt);
+        });
+
+        // Auto-select a reliable offline Microsoft/Apple English voice if present
+        const preferredOffline = sorted.find(v =>
+          v.localService &&
+          v.lang.toLowerCase().startsWith('en') &&
+          (v.name.includes('Microsoft') || v.name.includes('Samantha') || v.name.includes('Daniel') || v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Zira'))
+        );
+
+        if (currentVal !== 'DEFAULT_SAFE' && sorted.some(v => v.voiceURI === currentVal)) {
+          select.value = currentVal;
+          state.selectedVoiceURI = currentVal;
+        } else if (preferredOffline) {
+          select.value = preferredOffline.voiceURI;
+          state.selectedVoiceURI = preferredOffline.voiceURI;
+        } else {
+          select.value = 'DEFAULT_SAFE';
+          state.selectedVoiceURI = 'DEFAULT_SAFE';
+        }
+      };
+
+      populateVoiceList();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = populateVoiceList;
+      }
+
+      document.getElementById('voiceSelect').addEventListener('change', (e) => {
+        state.selectedVoiceURI = e.target.value;
+        speakText('Voice selected and active.', true);
+      });
+    }
+
+    function updateSpeechBadge(text, dotColorClass) {
+      const statusText = document.getElementById('speechStatusText');
+      const dot = document.getElementById('speechDot');
+      if (statusText) statusText.textContent = text;
+      if (dot) {
+        dot.className = `w-2.5 h-2.5 rounded-full ${dotColorClass}`;
+      }
+    }
+
+    function speakText(text, forceSpeak = false) {
+      if (!text) return;
+      // Always update the bottom visual caption when speaking a directional cue
+      if (!state.customBottomCaption) {
+        setBottomCaptionText(text);
+      }
+
+      if (!state.voiceEnabled && !forceSpeak) return;
+      if (!('speechSynthesis' in window)) return;
+
+      try {
+        // Cancel any stuck queue and wake up Chromium's speech dispatcher
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+
+        const cleanText = text.replace(/[→←↑↓•]/g, ' ').replace(/\s+/g, ' ').trim();
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        window._activeEyeUtterance = utterance;
+
+        utterance.rate = 0.98;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+        utterance.lang = 'en-US';
+
+        if (state.selectedVoiceURI && state.selectedVoiceURI !== 'DEFAULT_SAFE') {
+          const matched = state.availableVoices.find(v => v.voiceURI === state.selectedVoiceURI);
+          if (matched) {
+            utterance.voice = matched;
+            utterance.lang = matched.lang || 'en-US';
+          }
+        }
+
+        utterance.onstart = () => {
+          updateSpeechBadge('Speaking...', 'bg-emerald-400 speaking-dot');
+        };
+
+        utterance.onend = () => {
+          updateSpeechBadge('Voice Active', 'bg-emerald-400');
+        };
+
+        utterance.onerror = () => {
+          updateSpeechBadge('Voice Ready', 'bg-amber-400');
+        };
+
+        window.speechSynthesis.speak(utterance);
+
+        // Chromium paused-queue watchdog
+        setTimeout(() => {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+        }, 120);
+      } catch (err) {
+        console.warn('Speech synthesis error:', err);
+      }
+    }
+
+    function toggleVoice() {
+      state.voiceEnabled = !state.voiceEnabled;
+      const icon = document.getElementById('voiceToggleIcon');
+      const label = document.getElementById('voiceToggleLabel');
+      const btn = document.getElementById('toggleVoiceBtn');
+
+      if (state.voiceEnabled) {
+        icon.textContent = '🔊';
+        label.textContent = 'Voice: ON';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition flex items-center gap-1.5';
+        speakText('Voice announcements enabled.', true);
+      } else {
+        window.speechSynthesis && window.speechSynthesis.cancel();
+        icon.textContent = '🔇';
+        label.textContent = 'Voice: OFF';
+        btn.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700 hover:bg-slate-700 transition flex items-center gap-1.5';
+        updateSpeechBadge('Voice Muted', 'bg-slate-500');
+      }
+    }
+
+    function testVoiceAnnouncement() {
+      const ex = getCurrentExercise();
+      const sample = state.customBottomCaption || `Voice audio verified. Current exercise: ${ex.name}. ${state.currentBottomText}`;
+      speakText(sample, true);
+    }
+
+    function speakCurrentBottomText() {
+      const text = state.customBottomCaption || state.currentBottomText ||
+        getCurrentExercise().subtitle;
+      speakText(text, true);
+    }
+
+    // =========================================================================
+    // 4. BOTTOM VISUAL CAPTION & SCREENSHOT CAPTION HELPERS
+    // =========================================================================
+    function setBottomCaptionText(text) {
+      state.currentBottomText = text;
+      const el = document.getElementById('bottomVisualCaptionText');
+      if (el) {
+        el.textContent = state.customBottomCaption || text;
+      }
+    }
+
+    function applyAndSpeakCustomCaption() {
+      const input = document.getElementById('customCaptionInput');
+      const val = (input.value || '').trim();
+      if (!val) return;
+      state.customBottomCaption = val;
+      setBottomCaptionText(val);
+      speakText(val, true);
+    }
+
+    function quickPinAndSpeak(text) {
+      const input = document.getElementById('customCaptionInput');
+      if (input) input.value = text;
+      state.customBottomCaption = text;
+      setBottomCaptionText(text);
+      speakText(text, true);
+    }
+
+    function clearCustomCaptionOverride() {
+      state.customBottomCaption = '';
+      const input = document.getElementById('customCaptionInput');
+      if (input) input.value = '';
+      const ex = getCurrentExercise();
+      setBottomCaptionText(ex.subtitle);
+    }
+
+    function handleScreenshotUpload(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.getElementById('screenshotImg');
+        const container = document.getElementById('screenshotPreviewContainer');
+        img.src = e.target.result;
+        container.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearScreenshotPreview() {
+      document.getElementById('screenshotPreviewContainer').classList.add('hidden');
+      document.getElementById('screenshotInput').value = '';
+    }
+
+    // =========================================================================
+    // 5. ROUTINE & STAGE MANAGEMENT
+    // =========================================================================
+    function getCurrentExercise() {
+      const exIdx = state.activeIndices[state.currentSlot] ?? state.activeIndices[0] ?? 0;
+      return ALL_EXERCISES[exIdx] || ALL_EXERCISES[0];
+    }
+
+    function selectPreset(presetKey) {
+      state.preset = presetKey;
+      state.activeIndices = [...PRESET_MAP[presetKey]];
+      state.currentSlot = 0;
+      state.elapsedInStage = 0;
+      state.firedCueTimes.clear();
+
+      ['full', 'quick', 'relax'].forEach(k => {
+        const btn = document.getElementById(`preset-${k}`);
+        if (k === presetKey) {
+          btn.className = 'p-2.5 rounded-xl border border-emerald-500 bg-emerald-500/15 text-left transition cursor-pointer';
+        } else {
+          btn.className = 'p-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/60 text-left transition cursor-pointer';
+        }
+      });
+
+      renderExerciseList();
+      syncStageUI(true);
+    }
+
+    function renderExerciseList() {
+      const container = document.getElementById('exerciseListContainer');
+      container.innerHTML = '';
+
+      state.activeIndices.forEach((exIdx, slotIdx) => {
+        const ex = ALL_EXERCISES[exIdx];
+        const isCurrent = slotIdx === state.currentSlot;
+        const card = document.createElement('div');
+        card.className = `p-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
+          isCurrent
+            ? 'active-card border-emerald-500'
+            : 'border-slate-800/90 bg-slate-900/50 hover:bg-slate-800/60'
+        }`;
+        card.onclick = () => jumpToStage(slotIdx);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-7 h-7 rounded-lg ${isCurrent ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'} font-bold text-xs flex items-center justify-center shrink-0 mono">
+              ${slotIdx + 1}
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs sm:text-sm font-bold ${isCurrent ? 'text-emerald-300' : 'text-white'} truncate">${ex.name}</div>
+              <div class="text-[11px] text-slate-400 truncate">${ex.subtitle}</div>
+            </div>
+          </div>
+          <div class="text-xs font-bold mono ${isCurrent ? 'text-emerald-300' : 'text-slate-400'} shrink-0">
+            ${ex.duration}s
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function syncStageUI(announceStage = false) {
+      const ex = getCurrentExercise();
+      document.getElementById('stageStepBadge').textContent = `STAGE ${state.currentSlot + 1} / ${state.activeIndices.length}`;
+      document.getElementById('activeExerciseTitle').textContent = ex.name;
+      document.getElementById('activeExerciseSubtitle').textContent = ex.subtitle;
+
+      const remaining = Math.max(0, Math.ceil(ex.duration - state.elapsedInStage));
+      document.getElementById('stageTimerDisplay').textContent = formatSeconds(remaining);
+
+      const pct = Math.min(100, (state.elapsedInStage / ex.duration) * 100);
+      document.getElementById('stageProgressBar').style.width = `${pct}%`;
+
+      if (!state.customBottomCaption && state.elapsedInStage < 1.5) {
+        setBottomCaptionText(ex.cues[0] ? ex.cues[0].text : ex.subtitle);
+      }
+
+      renderExerciseList();
+
+      if (announceStage) {
+        speakText(ex.startPrompt);
+      }
+    }
+
+    function formatSeconds(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function toggleStartPause() {
+      state.isRunning = !state.isRunning;
+      const icon = document.getElementById('startPauseIcon');
+      const text = document.getElementById('startPauseText');
+
+      if (state.isRunning) {
+        icon.textContent = '⏸';
+        text.textContent = 'Pause Routine';
+        state.lastFrameTime = performance.now();
+        requestWakeLock();
+        if (state.elapsedInStage < 0.5) {
+          speakText(getCurrentExercise().startPrompt);
+        } else {
+          speakText('Resuming exercise.');
+        }
+      } else {
+        icon.textContent = '▶';
+        text.textContent = 'Resume Routine';
+        speakText('Routine paused.');
+      }
+    }
+
+    function jumpToStage(slotIdx) {
+      state.currentSlot = slotIdx;
+      state.elapsedInStage = 0;
+      state.firedCueTimes.clear();
+      syncStageUI(true);
+    }
+
+    function nextStage() {
+      if (state.currentSlot < state.activeIndices.length - 1) {
+        state.currentSlot++;
+        state.elapsedInStage = 0;
+        state.firedCueTimes.clear();
+        syncStageUI(true);
+      } else {
+        completeRoutine();
+      }
+    }
+
+    function prevStage() {
+      if (state.currentSlot > 0) {
+        state.currentSlot--;
+      }
+      state.elapsedInStage = 0;
+      state.firedCueTimes.clear();
+      syncStageUI(true);
+    }
+
+    function resetRoutine() {
+      state.isRunning = false;
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      state.currentSlot = 0;
+      state.elapsedInStage = 0;
+      state.firedCueTimes.clear();
+      document.getElementById('startPauseIcon').textContent = '▶';
+      document.getElementById('startPauseText').textContent = 'Start Routine';
+      syncStageUI(false);
+      speakText('Routine reset to stage 1.');
+    }
+
+    function completeRoutine() {
+      state.isRunning = false;
+      window.speechSynthesis && window.speechSynthesis.cancel();
+      state.elapsedInStage = 0;
+      state.firedCueTimes.clear();
+      document.getElementById('startPauseIcon').textContent = '▶';
+      document.getElementById('startPauseText').textContent = 'Restart Routine';
+      setBottomCaptionText('Routine Complete! Your eyes are refreshed and relaxed.');
+      speakText('Eye care routine complete! Great job. Blink softly and enjoy your refreshed vision.');
+    }
+
+    function updateSpeed() {
+      const val = parseFloat(document.getElementById('speedSelect').value) || 1.0;
+      state.speedMultiplier = val;
+    }
+
+    // =========================================================================
+    // 6. SCREEN WAKE LOCK API
+    // =========================================================================
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator) {
+        try {
+          state.wakeLock = await navigator.wakeLock.request('screen');
+          document.getElementById('wakeLockBadge').classList.remove('hidden');
+        } catch (e) {
+          // Wake lock optional inside sandboxed preview
+        }
+      }
+    }
+
+    // =========================================================================
+    // 7. 60FPS HTML5 CANVAS VISUAL TRACKING & HUD RENDERER
+    // =========================================================================
+    const canvas = document.getElementById('eyeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function drawSubtleGrid(w, h) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
+      ctx.lineWidth = 1;
+      const step = 44;
+      for (let x = step; x < w; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = step; y < h; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawGlowingTarget(x, y, radius = 16, label = '') {
+      ctx.save();
+      // Outer radial aura
+      const grad = ctx.createRadialGradient(x, y, 2, x, y, radius * 2.6);
+      grad.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
+      grad.addColorStop(0.45, 'rgba(16, 185, 129, 0.35)');
+      grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 2.6, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Solid emerald core
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Inner fixation bullseye dot
+      ctx.fillStyle = '#ecfdf5';
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 0.32, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (label) {
+        ctx.font = '700 12px Inter, sans-serif';
+        ctx.fillStyle = '#a7f3d0';
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x, y - radius - 12);
+      }
+      ctx.restore();
+    }
+
+    function renderLoop(now) {
+      const dt = Math.min(0.1, (now - state.lastFrameTime) / 1000);
+      state.lastFrameTime = now;
+
+      const ex = getCurrentExercise();
+
+      if (state.isRunning) {
+        state.elapsedInStage += dt;
+
+        // Check timed voice announcements
+        for (const cue of ex.cues) {
+          if (state.elapsedInStage >= cue.time && !state.firedCueTimes.has(cue.time)) {
+            state.firedCueTimes.add(cue.time);
+            speakText(cue.text);
+          }
+        }
+
+        // Update timer UI
+        const remaining = Math.max(0, Math.ceil(ex.duration - state.elapsedInStage));
+        document.getElementById('stageTimerDisplay').textContent = formatSeconds(remaining);
+        const pct = Math.min(100, (state.elapsedInStage / ex.duration) * 100);
+        document.getElementById('stageProgressBar').style.width = `${pct}%`;
+
+        if (state.elapsedInStage >= ex.duration) {
+          nextStage();
+        }
+      }
+
+      // Draw Canvas Stage
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const cx = w / 2;
+      const cy = (h - 48) / 2; // Leave room for bottom caption overlay
+
+      ctx.clearRect(0, 0, w, h);
+      drawSubtleGrid(w, h);
+
+      const t = (state.isRunning ? state.elapsedInStage : now / 1000) * state.speedMultiplier;
+
+      if (ex.id === 'horizontal') {
+        const spanX = Math.min(w * 0.38, 280);
+        // Guide track
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(cx - spanX, cy);
+        ctx.lineTo(cx + spanX, cy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const x = cx + Math.sin(t * 1.45) * spanX;
+        const dirLabel = Math.cos(t * 1.45) > 0 ? 'TRACK RIGHT →' : '← TRACK LEFT';
+        drawGlowingTarget(x, cy, 18, dirLabel);
+
+      } else if (ex.id === 'vertical') {
+        const spanY = Math.min(cy * 0.72, 130);
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([8, 8]);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - spanY);
+        ctx.lineTo(cx, cy + spanY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const y = cy - Math.sin(t * 1.4) * spanY;
+        const dirLabel = Math.cos(t * 1.4) > 0 ? '↑ LOOK UP' : '↓ LOOK DOWN';
+        drawGlowingTarget(cx, y, 18, dirLabel);
+
+      } else if (ex.id === 'orbital') {
+        const r = Math.min(w, h - 70) * 0.33;
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.24)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        const dir = state.elapsedInStage > ex.duration / 2 ? -1 : 1;
+        const angle = t * 1.3 * dir - Math.PI / 2;
+        const x = cx + Math.cos(angle) * r;
+        const y = cy + Math.sin(angle) * r;
+        drawGlowingTarget(x, y, 17, dir === 1 ? 'CLOCKWISE ↻' : 'COUNTER-CLOCKWISE ↺');
+
+      } else if (ex.id === 'figure8') {
+        const scaleX = Math.min(w * 0.35, 250);
+        const scaleY = Math.min(cy * 0.65, 110);
+
+        // Draw Lemniscate path
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.22)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let a = 0; a <= Math.PI * 2; a += 0.05) {
+          const px = cx + Math.sin(a) * scaleX;
+          const py = cy + Math.sin(a * 2) * scaleY * 0.55;
+          if (a === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+
+        const dir = state.elapsedInStage > ex.duration / 2 ? -1 : 1;
+        const phase = t * 1.15 * dir;
+        const x = cx + Math.sin(phase) * scaleX;
+        const y = cy + Math.sin(phase * 2) * scaleY * 0.55;
+        drawGlowingTarget(x, y, 17, '∞ INFINITY FLOW');
+
+      } else if (ex.id === 'nearfar') {
+        const wave = (Math.sin(t * 0.95) + 1) / 2; // 0 (far) to 1 (near)
+        const minR = 14;
+        const maxR = Math.min(w, h - 80) * 0.32;
+        const r = minR + wave * (maxR - minR);
+
+        // Concentric depth rings
+        for (let i = 1; i <= 3; i++) {
+          ctx.strokeStyle = `rgba(16, 185, 129, ${0.12 * i})`;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * (i / 3), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        const label = wave > 0.5 ? 'FOCUS NEAR (CLOSE CONVERGENCE)' : 'FOCUS FAR (20 FT DISTANCE)';
+        drawGlowingTarget(cx, cy, Math.max(12, r * 0.35), label);
+
+      } else if (ex.id === 'blinking') {
+        const blinkWave = Math.abs(Math.sin(t * 3.8));
+        const eyeW = 95;
+        const eyeH = Math.max(4, blinkWave * 42);
+
+        ctx.save();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, eyeW, eyeH, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (eyeH > 12) {
+          ctx.fillStyle = '#34d399';
+          ctx.beginPath();
+          ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.font = '700 13px Inter, sans-serif';
+        ctx.fillStyle = '#a7f3d0';
+        ctx.textAlign = 'center';
+        ctx.fillText('FLUTTER BLINK GENTLY & REFRESH TEAR FILM', cx, cy - 64);
+        ctx.restore();
+
+      } else if (ex.id === 'palming') {
+        // Soothing breathing halo (4s inhale, 4s exhale)
+        const breath = (Math.sin((now / 1000) * (Math.PI / 4)) + 1) / 2;
+        const r = 40 + breath * 55;
+
+        const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, r * 1.8);
+        grad.addColorStop(0, 'rgba(20, 184, 166, 0.45)');
+        grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(45, 212, 191, 0.6)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.font = '700 14px Inter, sans-serif';
+        ctx.fillStyle = '#99f6e4';
+        ctx.textAlign = 'center';
+        ctx.fillText(breath > 0.5 ? 'INHALE SLOWLY... CUP WARM PALMS OVER EYES' : 'EXHALE & RELAX IN COMPLETE DARKNESS', cx, cy);
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      resizeCanvas();
+      initVoices();
+      renderExerciseList();
+      syncStageUI(false);
+      requestAnimationFrame(renderLoop);
+    });
+  </script>
+</body>
+</html>
