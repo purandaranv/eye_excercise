@@ -3,38 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive eye care and vision exercise routine with guided audio prompts." />
   <title>Eye Care & Vision Exercises — Interactive Voice & Visual Guide</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+    :root {
+      --bg: #070d19;
+      --panel: rgba(15, 23, 42, 0.78);
+      --panel-strong: rgba(15, 23, 42, 0.92);
+      --border: rgba(51, 65, 85, 0.7);
+      --emerald: #10b981;
+      --emerald-soft: rgba(16,185,129,0.12);
+      --slate-800: #1e293b;
+      --slate-700: #334155;
+      --slate-500: #64748b;
+    }
+
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background-color: #070d19;
+      background:
+        radial-gradient(circle at top, rgba(16,185,129,0.18), transparent 30%),
+        linear-gradient(180deg, #070d19 0%, #0f172a 100%);
       color: #e2e8f0;
       overflow-x: hidden;
     }
-    .mono {
-      font-family: 'JetBrains Mono', monospace;
-    }
+
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
     .glass-panel {
-      background: rgba(15, 23, 42, 0.78);
+      background: var(--panel);
       backdrop-filter: blur(14px);
-      border: 1px solid rgba(51, 65, 85, 0.65);
+      border: 1px solid var(--border);
+      box-shadow: 0 18px 48px rgba(2, 6, 23, 0.3);
     }
+
     .active-card {
       border-color: #10b981 !important;
       background: rgba(16, 185, 129, 0.12) !important;
       box-shadow: 0 0 20px rgba(16, 185, 129, 0.18);
     }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border-radius: 999px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .vision-grid {
+      background-image:
+        linear-gradient(rgba(148,163,184,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148,163,184,0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .intro-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(2, 6, 23, 0.7);
+      backdrop-filter: blur(6px);
+      z-index: 20;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .intro-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .intro-card {
+      width: min(92%, 620px);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(16,185,129,0.35);
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 30px 80px rgba(5, 10, 20, 0.45);
+    }
+
     @keyframes pulse-ring {
       0% { transform: scale(0.95); opacity: 0.9; }
       50% { transform: scale(1.12); opacity: 0.4; }
       100% { transform: scale(0.95); opacity: 0.9; }
     }
-    .speaking-dot {
-      animation: pulse-ring 1.2s infinite ease-in-out;
-    }
-    /* Custom scrollbar */
+
+    .speaking-dot { animation: pulse-ring 1.2s infinite ease-in-out; }
+
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0f172a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
@@ -43,11 +108,8 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-slate-950">
 
-  <!-- TOP NAVIGATION & AUDIO BAR -->
   <header class="glass-panel sticky top-0 z-30 border-b border-slate-800/80 px-4 py-3">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      
-      <!-- Brand -->
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -58,50 +120,37 @@
         <div>
           <div class="flex items-center gap-2">
             <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">OcuFlow Vision Coach</h1>
-            <span id="wakeLockBadge" class="hidden text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Wake Lock</span>
+            <span id="wakeLockBadge" class="hidden status-pill bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Wake Lock</span>
           </div>
           <p class="text-xs text-slate-400">60FPS Oculomotor Tracking &bull; Real-Time Voice Announcements</p>
         </div>
       </div>
 
-      <!-- Audio & Voice Controls -->
       <div class="flex flex-wrap items-center gap-2">
-        <!-- Live Speaking Indicator -->
         <div id="speechStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/90 border border-slate-700 text-xs">
           <span id="speechDot" class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
           <span id="speechStatusText" class="text-slate-300 font-medium">Voice Ready</span>
         </div>
 
-        <!-- Voice Selector -->
         <select id="voiceSelect" aria-label="Select TTS Voice" class="bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-emerald-500 max-w-[220px]">
           <option value="DEFAULT_SAFE">System Default (Safe Mode)</option>
         </select>
 
-        <!-- Voice Toggle -->
-        <button id="toggleVoiceBtn" onclick="toggleVoice()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition flex items-center gap-1.5">
+        <button id="toggleVoiceBtn" onclick="toggleVoice()" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition flex items-center gap-1.5" aria-label="Toggle voice announcements">
           <span id="voiceToggleIcon">🔊</span>
           <span id="voiceToggleLabel">Voice: ON</span>
         </button>
 
-        <!-- Test Voice Button -->
-        <button onclick="testVoiceAnnouncement()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5">
+        <button onclick="testVoiceAnnouncement()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5" aria-label="Test voice announcement">
           <span>🎙️ Test Voice</span>
         </button>
       </div>
-
     </div>
   </header>
 
-  <!-- MAIN CONTENT GRID -->
   <main class="max-w-7xl w-full mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1">
-
-    <!-- LEFT / CENTER COLUMN: VISUAL TRACKING STAGE (8 COLS) -->
     <section class="lg:col-span-8 flex flex-col gap-4">
-      
-      <!-- Canvas Container Card -->
       <div class="glass-panel rounded-2xl p-3 sm:p-4 flex flex-col relative overflow-hidden shadow-2xl">
-        
-        <!-- Top Stage Info Overlay -->
         <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-2 border-b border-slate-800/80">
           <div class="flex items-center gap-2.5">
             <span id="stageStepBadge" class="px-2.5 py-1 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold mono">
@@ -113,7 +162,6 @@
             </div>
           </div>
 
-          <!-- Timer & Routine Progress -->
           <div class="flex items-center gap-3">
             <div class="text-right">
               <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Remaining</div>
@@ -122,11 +170,37 @@
           </div>
         </div>
 
-        <!-- HTML5 VISUAL TRACKING CANVAS -->
-        <div class="relative w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800" style="height: 410px;">
+        <div class="relative w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800 vision-grid" style="height: 410px;">
           <canvas id="eyeCanvas" class="w-full h-full block"></canvas>
 
-          <!-- Prominent Bottom Visual Caption HUD Overlay (DOM Layer synced with Canvas + Instant Speak Button) -->
+          <div id="introOverlay" class="intro-overlay" aria-live="polite">
+            <div class="intro-card">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                  <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.577 20 12 20c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <div class="text-[10px] uppercase tracking-[0.2em] text-emerald-300 font-bold">Vision routine</div>
+                  <h3 class="text-xl font-bold text-white">Ready to begin?</h3>
+                </div>
+              </div>
+              <p class="text-sm text-slate-300 leading-6 mb-5">
+                Follow the glowing target, keep your head still, and let the guided voice coach you through each exercise.
+              </p>
+              <div class="flex flex-wrap items-center gap-2 mb-4 text-[11px] text-slate-300">
+                <span class="status-pill bg-slate-800 text-slate-200 border border-slate-700">7 stages</span>
+                <span class="status-pill bg-slate-800 text-slate-200 border border-slate-700">Voice guided</span>
+                <span class="status-pill bg-slate-800 text-slate-200 border border-slate-700">Low-glare mode</span>
+              </div>
+              <button id="startRoutineBtn" class="w-full px-5 py-3 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition cursor-pointer">
+                Start Routine
+              </button>
+            </div>
+          </div>
+
           <div id="canvasPhaseOverlay" class="absolute bottom-3 left-3 right-3 bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
             <div class="flex items-center gap-2.5 min-w-0 flex-1">
               <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 speaking-dot"></span>
@@ -137,40 +211,37 @@
                 </div>
               </div>
             </div>
-            <button onclick="speakCurrentBottomText()" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition cursor-pointer">
+            <button onclick="speakCurrentBottomText()" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition cursor-pointer" aria-label="Replay the current instruction">
               🔊 Speak Text Now
             </button>
           </div>
         </div>
 
-        <!-- Stage Progress Bar -->
         <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden mt-3 border border-slate-800">
           <div id="stageProgressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-150"></div>
         </div>
 
-        <!-- Playback & Transport Controls -->
         <div class="flex flex-wrap items-center justify-between gap-3 mt-3 pt-2">
           <div class="flex items-center gap-2">
-            <button id="startPauseBtn" onclick="toggleStartPause()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition cursor-pointer">
+            <button id="startPauseBtn" onclick="toggleStartPause()" class="px-5 py-2.5 rounded-xl font-bold text-sm bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-500/25 transition cursor-pointer" aria-label="Start or pause the routine">
               <span id="startPauseIcon">▶</span>
               <span id="startPauseText">Start Routine</span>
             </button>
-            <button onclick="prevStage()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+            <button onclick="prevStage()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer" aria-label="Previous stage">
               ⏮ Prev
             </button>
-            <button onclick="nextStage()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer">
+            <button onclick="nextStage()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition cursor-pointer" aria-label="Next stage">
               Next ⏭
             </button>
-            <button onclick="resetRoutine()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition cursor-pointer">
+            <button onclick="resetRoutine()" class="px-3 py-2.5 rounded-xl font-semibold text-xs bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 transition cursor-pointer" aria-label="Reset the routine">
               ↺ Reset
             </button>
           </div>
 
-          <!-- Speed & Speech Rate Controls -->
           <div class="flex items-center gap-3 text-xs">
             <label class="flex items-center gap-1.5 text-slate-300">
               <span>Target Speed:</span>
-              <select id="speedSelect" onchange="updateSpeed()" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200">
+              <select id="speedSelect" onchange="updateSpeed()" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-slate-200" aria-label="Adjust target speed">
                 <option value="0.7">Gentle (0.7x)</option>
                 <option value="1.0" selected>Standard (1.0x)</option>
                 <option value="1.35">Brisk (1.35x)</option>
@@ -178,10 +249,8 @@
             </label>
           </div>
         </div>
-
       </div>
 
-      <!-- Custom Bottom Visual Text & Screenshot Caption Bar -->
       <div class="glass-panel rounded-2xl p-4 border border-slate-800">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
           <div>
@@ -194,7 +263,6 @@
           </label>
         </div>
 
-        <!-- Optional Screenshot Thumbnail Preview -->
         <div id="screenshotPreviewContainer" class="hidden mb-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-700 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3">
             <img id="screenshotImg" src="" alt="Screenshot Reference" class="h-14 w-auto rounded-lg border border-slate-700 object-contain" />
@@ -203,12 +271,11 @@
               <div class="text-slate-400">Type or select the caption below to display at the bottom of the visual &amp; announce aloud.</div>
             </div>
           </div>
-          <button onclick="clearScreenshotPreview()" class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1">✕ Remove</button>
+          <button onclick="clearScreenshotPreview()" class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1" aria-label="Remove screenshot preview">✕ Remove</button>
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <input id="customCaptionInput" type="text" placeholder="Type custom instruction text to show at bottom of visual & speak aloud..." 
-            class="flex-1 min-w-[220px] bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" />
+          <input id="customCaptionInput" type="text" placeholder="Type custom instruction text to show at bottom of visual & speak aloud..." class="flex-1 min-w-[220px] bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" aria-label="Custom exercise instruction" />
           <button onclick="applyAndSpeakCustomCaption()" class="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs sm:text-sm transition cursor-pointer">
             📌 Pin to Visual &amp; Speak
           </button>
@@ -217,7 +284,6 @@
           </button>
         </div>
 
-        <!-- Quick Preset Screenshot / Clinical Captions -->
         <div class="flex flex-wrap items-center gap-1.5 mt-2.5">
           <span class="text-[11px] text-slate-400 mr-1">Quick Voice Prompts:</span>
           <button onclick="quickPinAndSpeak('20-20-20 Rule: Look 20 feet away for 20 seconds to relax eye muscles.')" class="text-[11px] px-2.5 py-1 rounded-md bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 transition cursor-pointer">
@@ -234,13 +300,9 @@
           </button>
         </div>
       </div>
-
     </section>
 
-    <!-- RIGHT COLUMN: ROUTINE PRESETS & 7 EXERCISES LIST (4 COLS) -->
     <aside class="lg:col-span-4 flex flex-col gap-4">
-      
-      <!-- Routine Mode Selector -->
       <div class="glass-panel rounded-2xl p-4">
         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">Select Routine Preset</h3>
         <div class="grid grid-cols-3 gap-2">
@@ -259,26 +321,17 @@
         </div>
       </div>
 
-      <!-- Exercise Queue List -->
       <div class="glass-panel rounded-2xl p-4 flex-1 flex flex-col">
         <div class="flex items-center justify-between mb-3">
           <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Exercise Sequence</h3>
           <span class="text-[11px] text-slate-400">Click any stage to jump</span>
         </div>
-        <div id="exerciseListContainer" class="space-y-2 overflow-y-auto max-h-[470px] pr-1">
-          <!-- Populated dynamically via JS -->
-        </div>
+        <div id="exerciseListContainer" class="space-y-2 overflow-y-auto max-h-[470px] pr-1"></div>
       </div>
-
     </aside>
-
   </main>
 
-  <!-- JAVASCRIPT ENGINE -->
   <script>
-    // =========================================================================
-    // 1. EXERCISE DEFINITIONS & TIMED VOICE CUES
-    // =========================================================================
     const ALL_EXERCISES = [
       {
         id: 'horizontal',
@@ -385,9 +438,6 @@
       relax: [4, 5, 6]
     };
 
-    // =========================================================================
-    // 2. APPLICATION STATE
-    // =========================================================================
     const state = {
       preset: 'full',
       activeIndices: [...PRESET_MAP.full],
@@ -402,15 +452,12 @@
       customBottomCaption: '',
       currentBottomText: 'Look Left → Follow Target Smoothly',
       lastFrameTime: performance.now(),
-      wakeLock: null
+      wakeLock: null,
+      introDismissed: false
     };
 
-    // Prevent garbage collection of active SpeechSynthesisUtterance in Chromium
     window._activeEyeUtterance = null;
 
-    // =========================================================================
-    // 3. VOICE ANNOUNCEMENT ENGINE (PURE SPEECH SYNTHESIS - NO CHIMES)
-    // =========================================================================
     function initVoices() {
       if (!('speechSynthesis' in window)) {
         updateSpeechBadge('Speech API Unsupported', 'bg-rose-500');
@@ -424,13 +471,11 @@
         const currentVal = select.value || 'DEFAULT_SAFE';
         select.innerHTML = '';
 
-        // Option 1: Unassigned Default Safe Mode (bypasses stalled remote Google voice bindings)
         const safeOpt = document.createElement('option');
         safeOpt.value = 'DEFAULT_SAFE';
         safeOpt.textContent = '★ System Default Voice (Recommended)';
         select.appendChild(safeOpt);
 
-        // Sort offline/local English voices first
         const sorted = [...rawVoices].sort((a, b) => {
           const aEng = a.lang.toLowerCase().startsWith('en') ? 1 : 0;
           const bEng = b.lang.toLowerCase().startsWith('en') ? 1 : 0;
@@ -446,7 +491,6 @@
           select.appendChild(opt);
         });
 
-        // Auto-select a reliable offline Microsoft/Apple English voice if present
         const preferredOffline = sorted.find(v =>
           v.localService &&
           v.lang.toLowerCase().startsWith('en') &&
@@ -480,23 +524,16 @@
       const statusText = document.getElementById('speechStatusText');
       const dot = document.getElementById('speechDot');
       if (statusText) statusText.textContent = text;
-      if (dot) {
-        dot.className = `w-2.5 h-2.5 rounded-full ${dotColorClass}`;
-      }
+      if (dot) dot.className = `w-2.5 h-2.5 rounded-full ${dotColorClass}`;
     }
 
     function speakText(text, forceSpeak = false) {
       if (!text) return;
-      // Always update the bottom visual caption when speaking a directional cue
-      if (!state.customBottomCaption) {
-        setBottomCaptionText(text);
-      }
-
+      if (!state.customBottomCaption) setBottomCaptionText(text);
       if (!state.voiceEnabled && !forceSpeak) return;
       if (!('speechSynthesis' in window)) return;
 
       try {
-        // Cancel any stuck queue and wake up Chromium's speech dispatcher
         window.speechSynthesis.cancel();
         window.speechSynthesis.resume();
 
@@ -517,25 +554,14 @@
           }
         }
 
-        utterance.onstart = () => {
-          updateSpeechBadge('Speaking...', 'bg-emerald-400 speaking-dot');
-        };
-
-        utterance.onend = () => {
-          updateSpeechBadge('Voice Active', 'bg-emerald-400');
-        };
-
-        utterance.onerror = () => {
-          updateSpeechBadge('Voice Ready', 'bg-amber-400');
-        };
+        utterance.onstart = () => updateSpeechBadge('Speaking...', 'bg-emerald-400 speaking-dot');
+        utterance.onend = () => updateSpeechBadge('Voice Active', 'bg-emerald-400');
+        utterance.onerror = () => updateSpeechBadge('Voice Ready', 'bg-amber-400');
 
         window.speechSynthesis.speak(utterance);
 
-        // Chromium paused-queue watchdog
         setTimeout(() => {
-          if (window.speechSynthesis.paused) {
-            window.speechSynthesis.resume();
-          }
+          if (window.speechSynthesis.paused) window.speechSynthesis.resume();
         }, 120);
       } catch (err) {
         console.warn('Speech synthesis error:', err);
@@ -569,20 +595,14 @@
     }
 
     function speakCurrentBottomText() {
-      const text = state.customBottomCaption || state.currentBottomText ||
-        getCurrentExercise().subtitle;
+      const text = state.customBottomCaption || state.currentBottomText || getCurrentExercise().subtitle;
       speakText(text, true);
     }
 
-    // =========================================================================
-    // 4. BOTTOM VISUAL CAPTION & SCREENSHOT CAPTION HELPERS
-    // =========================================================================
     function setBottomCaptionText(text) {
       state.currentBottomText = text;
       const el = document.getElementById('bottomVisualCaptionText');
-      if (el) {
-        el.textContent = state.customBottomCaption || text;
-      }
+      if (el) el.textContent = state.customBottomCaption || text;
     }
 
     function applyAndSpeakCustomCaption() {
@@ -624,13 +644,11 @@
     }
 
     function clearScreenshotPreview() {
-      document.getElementById('screenshotPreviewContainer').classList.add('hidden');
+      const container = document.getElementById('screenshotPreviewContainer');
+      container.classList.add('hidden');
       document.getElementById('screenshotInput').value = '';
     }
 
-    // =========================================================================
-    // 5. ROUTINE & STAGE MANAGEMENT
-    // =========================================================================
     function getCurrentExercise() {
       const exIdx = state.activeIndices[state.currentSlot] ?? state.activeIndices[0] ?? 0;
       return ALL_EXERCISES[exIdx] || ALL_EXERCISES[0];
@@ -665,9 +683,7 @@
         const isCurrent = slotIdx === state.currentSlot;
         const card = document.createElement('div');
         card.className = `p-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
-          isCurrent
-            ? 'active-card border-emerald-500'
-            : 'border-slate-800/90 bg-slate-900/50 hover:bg-slate-800/60'
+          isCurrent ? 'active-card border-emerald-500' : 'border-slate-800/90 bg-slate-900/50 hover:bg-slate-800/60'
         }`;
         card.onclick = () => jumpToStage(slotIdx);
 
@@ -707,9 +723,7 @@
 
       renderExerciseList();
 
-      if (announceStage) {
-        speakText(ex.startPrompt);
-      }
+      if (announceStage) speakText(ex.startPrompt);
     }
 
     function formatSeconds(sec) {
@@ -733,11 +747,23 @@
         } else {
           speakText('Resuming exercise.');
         }
+        hideIntroOverlay();
       } else {
         icon.textContent = '▶';
         text.textContent = 'Resume Routine';
         speakText('Routine paused.');
       }
+    }
+
+    function startRoutineFromIntro() {
+      state.introDismissed = true;
+      hideIntroOverlay();
+      document.getElementById('startPauseBtn').click();
+    }
+
+    function hideIntroOverlay() {
+      const overlay = document.getElementById('introOverlay');
+      if (overlay) overlay.classList.add('hidden');
     }
 
     function jumpToStage(slotIdx) {
@@ -759,9 +785,7 @@
     }
 
     function prevStage() {
-      if (state.currentSlot > 0) {
-        state.currentSlot--;
-      }
+      if (state.currentSlot > 0) state.currentSlot--;
       state.elapsedInStage = 0;
       state.firedCueTimes.clear();
       syncStageUI(true);
@@ -776,6 +800,9 @@
       document.getElementById('startPauseIcon').textContent = '▶';
       document.getElementById('startPauseText').textContent = 'Start Routine';
       syncStageUI(false);
+      const overlay = document.getElementById('introOverlay');
+      if (overlay) overlay.classList.remove('hidden');
+      state.introDismissed = false;
       speakText('Routine reset to stage 1.');
     }
 
@@ -795,23 +822,17 @@
       state.speedMultiplier = val;
     }
 
-    // =========================================================================
-    // 6. SCREEN WAKE LOCK API
-    // =========================================================================
     async function requestWakeLock() {
       if ('wakeLock' in navigator) {
         try {
           state.wakeLock = await navigator.wakeLock.request('screen');
           document.getElementById('wakeLockBadge').classList.remove('hidden');
         } catch (e) {
-          // Wake lock optional inside sandboxed preview
+          // optional in sandboxed previews
         }
       }
     }
 
-    // =========================================================================
-    // 7. 60FPS HTML5 CANVAS VISUAL TRACKING & HUD RENDERER
-    // =========================================================================
     const canvas = document.getElementById('eyeCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -822,7 +843,6 @@
       canvas.height = rect.height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    window.addEventListener('resize', resizeCanvas);
 
     function drawSubtleGrid(w, h) {
       ctx.save();
@@ -846,7 +866,6 @@
 
     function drawGlowingTarget(x, y, radius = 16, label = '') {
       ctx.save();
-      // Outer radial aura
       const grad = ctx.createRadialGradient(x, y, 2, x, y, radius * 2.6);
       grad.addColorStop(0, 'rgba(16, 185, 129, 0.95)');
       grad.addColorStop(0.45, 'rgba(16, 185, 129, 0.35)');
@@ -856,13 +875,11 @@
       ctx.arc(x, y, radius * 2.6, 0, Math.PI * 2);
       ctx.fill();
 
-      // Solid emerald core
       ctx.fillStyle = '#10b981';
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Inner fixation bullseye dot
       ctx.fillStyle = '#ecfdf5';
       ctx.beginPath();
       ctx.arc(x, y, radius * 0.32, 0, Math.PI * 2);
@@ -886,7 +903,6 @@
       if (state.isRunning) {
         state.elapsedInStage += dt;
 
-        // Check timed voice announcements
         for (const cue of ex.cues) {
           if (state.elapsedInStage >= cue.time && !state.firedCueTimes.has(cue.time)) {
             state.firedCueTimes.add(cue.time);
@@ -894,23 +910,19 @@
           }
         }
 
-        // Update timer UI
         const remaining = Math.max(0, Math.ceil(ex.duration - state.elapsedInStage));
         document.getElementById('stageTimerDisplay').textContent = formatSeconds(remaining);
         const pct = Math.min(100, (state.elapsedInStage / ex.duration) * 100);
         document.getElementById('stageProgressBar').style.width = `${pct}%`;
 
-        if (state.elapsedInStage >= ex.duration) {
-          nextStage();
-        }
+        if (state.elapsedInStage >= ex.duration) nextStage();
       }
 
-      // Draw Canvas Stage
       const rect = canvas.parentElement.getBoundingClientRect();
       const w = rect.width;
       const h = rect.height;
       const cx = w / 2;
-      const cy = (h - 48) / 2; // Leave room for bottom caption overlay
+      const cy = (h - 48) / 2;
 
       ctx.clearRect(0, 0, w, h);
       drawSubtleGrid(w, h);
@@ -919,7 +931,6 @@
 
       if (ex.id === 'horizontal') {
         const spanX = Math.min(w * 0.38, 280);
-        // Guide track
         ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
         ctx.lineWidth = 3;
         ctx.setLineDash([8, 8]);
@@ -932,7 +943,6 @@
         const x = cx + Math.sin(t * 1.45) * spanX;
         const dirLabel = Math.cos(t * 1.45) > 0 ? 'TRACK RIGHT →' : '← TRACK LEFT';
         drawGlowingTarget(x, cy, 18, dirLabel);
-
       } else if (ex.id === 'vertical') {
         const spanY = Math.min(cy * 0.72, 130);
         ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
@@ -947,7 +957,6 @@
         const y = cy - Math.sin(t * 1.4) * spanY;
         const dirLabel = Math.cos(t * 1.4) > 0 ? '↑ LOOK UP' : '↓ LOOK DOWN';
         drawGlowingTarget(cx, y, 18, dirLabel);
-
       } else if (ex.id === 'orbital') {
         const r = Math.min(w, h - 70) * 0.33;
         ctx.strokeStyle = 'rgba(16, 185, 129, 0.24)';
@@ -961,12 +970,10 @@
         const x = cx + Math.cos(angle) * r;
         const y = cy + Math.sin(angle) * r;
         drawGlowingTarget(x, y, 17, dir === 1 ? 'CLOCKWISE ↻' : 'COUNTER-CLOCKWISE ↺');
-
       } else if (ex.id === 'figure8') {
         const scaleX = Math.min(w * 0.35, 250);
         const scaleY = Math.min(cy * 0.65, 110);
 
-        // Draw Lemniscate path
         ctx.strokeStyle = 'rgba(16, 185, 129, 0.22)';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
@@ -984,14 +991,12 @@
         const x = cx + Math.sin(phase) * scaleX;
         const y = cy + Math.sin(phase * 2) * scaleY * 0.55;
         drawGlowingTarget(x, y, 17, '∞ INFINITY FLOW');
-
       } else if (ex.id === 'nearfar') {
-        const wave = (Math.sin(t * 0.95) + 1) / 2; // 0 (far) to 1 (near)
+        const wave = (Math.sin(t * 0.95) + 1) / 2;
         const minR = 14;
         const maxR = Math.min(w, h - 80) * 0.32;
         const r = minR + wave * (maxR - minR);
 
-        // Concentric depth rings
         for (let i = 1; i <= 3; i++) {
           ctx.strokeStyle = `rgba(16, 185, 129, ${0.12 * i})`;
           ctx.lineWidth = 1.5;
@@ -1002,7 +1007,6 @@
 
         const label = wave > 0.5 ? 'FOCUS NEAR (CLOSE CONVERGENCE)' : 'FOCUS FAR (20 FT DISTANCE)';
         drawGlowingTarget(cx, cy, Math.max(12, r * 0.35), label);
-
       } else if (ex.id === 'blinking') {
         const blinkWave = Math.abs(Math.sin(t * 3.8));
         const eyeW = 95;
@@ -1019,7 +1023,6 @@
 
         const label = blinkWave > 0.75 ? 'BLINK — RELAX AND REFRESH' : 'FLUTTER BLINK — SOFT TEAR FILM';
         drawGlowingTarget(cx, cy + 18, 14, label);
-
       } else if (ex.id === 'palming') {
         const hands = [
           { x: cx - 80, y: cy + 22 },
@@ -1042,6 +1045,15 @@
 
       requestAnimationFrame(renderLoop);
     }
+
+    window.addEventListener('resize', resizeCanvas);
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && state.isRunning) {
+        window.speechSynthesis && window.speechSynthesis.cancel();
+      }
+    });
+
+    document.getElementById('startRoutineBtn').addEventListener('click', startRoutineFromIntro);
 
     resizeCanvas();
     initVoices();
